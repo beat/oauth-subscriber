@@ -60,18 +60,18 @@ class Oauth1 implements SubscriberInterface
      */
     public function __construct($config)
     {
-        $this->config = Collection::fromConfig($config, [
+        $this->config = Collection::fromConfig($config, array(
             'version'          => '1.0',
             'request_method'   => self::REQUEST_METHOD_HEADER,
             'consumer_key'     => 'anonymous',
             'consumer_secret'  => 'anonymous',
             'signature_method' => self::SIGNATURE_METHOD_HMAC,
-        ], ['signature_method', 'version', 'consumer_key', 'consumer_secret']);
+		), array('signature_method', 'version', 'consumer_key', 'consumer_secret'));
     }
 
     public function getEvents()
     {
-        return ['before' => ['onBefore', RequestEvents::SIGN_REQUEST]];
+        return array('before' => array('onBefore', RequestEvents::SIGN_REQUEST));
     }
 
     public function onBefore(BeforeEvent $event)
@@ -79,7 +79,8 @@ class Oauth1 implements SubscriberInterface
         $request = $event->getRequest();
 
         // Only sign requests using "auth"="oauth"
-        if ($request->getConfig()['auth'] != 'oauth') {
+		$requestConfig = $request->getConfig();
+        if ($requestConfig['auth'] != 'oauth') {
             return;
         }
 
@@ -140,9 +141,9 @@ class Oauth1 implements SubscriberInterface
         );
 
         // Implements double-dispatch to sign requests
-        $meth = [$this, 'sign_' . str_replace(
+        $meth = array($this, 'sign_' . str_replace(
             '-', '_', $this->config['signature_method']
-        )];
+        ));
 
         if (!is_callable($meth)) {
             throw new \RuntimeException('Unknown signature method: '
@@ -213,7 +214,8 @@ class Oauth1 implements SubscriberInterface
         return $data;
     }
 
-    private function sign_HMAC_SHA1($baseString)
+	/** @noinspection PhpUnusedPrivateMethodInspection */
+	private function sign_HMAC_SHA1($baseString)
     {
         $key = rawurlencode($this->config['consumer_secret'])
             . '&' . rawurlencode($this->config['token_secret']);
@@ -221,7 +223,8 @@ class Oauth1 implements SubscriberInterface
         return hash_hmac('sha1', $baseString, $key, true);
     }
 
-    private function sign_RSA_SHA1($baseString)
+	/** @noinspection PhpUnusedPrivateMethodInspection */
+	private function sign_RSA_SHA1($baseString)
     {
         if (!function_exists('openssl_pkey_get_private')) {
             throw new \RuntimeException('RSA-SHA1 signature method '
@@ -240,7 +243,8 @@ class Oauth1 implements SubscriberInterface
         return $signature;
     }
 
-    private function sign_PLAINTEXT($baseString)
+	/** @noinspection PhpUnusedPrivateMethodInspection */
+	private function sign_PLAINTEXT($baseString)
     {
         return $baseString;
     }
@@ -265,7 +269,7 @@ class Oauth1 implements SubscriberInterface
             );
         }
 
-        return ['Authorization', 'OAuth ' . implode(', ', $params)];
+        return array('Authorization', 'OAuth ' . implode(', ', $params));
     }
 
     /**
@@ -278,22 +282,22 @@ class Oauth1 implements SubscriberInterface
      */
     private function getOauthParams($nonce, Collection $config)
     {
-        $params = [
+        $params = array(
             'oauth_consumer_key'     => $config['consumer_key'],
             'oauth_nonce'            => $nonce,
             'oauth_signature_method' => $config['signature_method'],
             'oauth_timestamp'        => time(),
-        ];
+		);
 
         // Optional parameters should not be set if they have not been set in
         // the config as the parameter may be considered invalid by the Oauth
         // service.
-        $optionalParams = [
+        $optionalParams = array(
             'callback'  => 'oauth_callback',
             'token'     => 'oauth_token',
             'verifier'  => 'oauth_verifier',
             'version'   => 'oauth_version'
-        ];
+		);
 
         foreach ($optionalParams as $optionName => $oauthName) {
             if (isset($config[$optionName])) {
